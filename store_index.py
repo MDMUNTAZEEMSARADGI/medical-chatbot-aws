@@ -15,20 +15,22 @@ os.environ["PINECONE_API_KEY"] = PINECONE_API_KEY
 os.environ["GEMINI_API_KEY"] = GEMINI_API_KEY
 
 
+print("Loading PDF from data/...")
 extracted_data=load_pdf_file(data='data/')
+print(f"Loaded {len(extracted_data)} pages. Filtering minimal docs...")
 filter_data = filter_to_minimal_docs(extracted_data)
 text_chunks=text_split(filter_data)
+print(f"Split into {len(text_chunks)} text chunks.")
 
 embeddings = download_hugging_face_embeddings()
 
 pinecone_api_key = PINECONE_API_KEY
 pc = Pinecone(api_key=pinecone_api_key)
 
-
-
 index_name = "medical-chatbot"  # change if desired
 
 if not pc.has_index(index_name):
+    print(f"Creating index {index_name}...")
     pc.create_index(
         name=index_name,
         dimension=384,
@@ -38,9 +40,10 @@ if not pc.has_index(index_name):
 
 index = pc.Index(index_name)
 
-
+print("Upserting documents into Pinecone (this may take a few minutes)...")
 docsearch = PineconeVectorStore.from_documents(
     documents=text_chunks,
     index_name=index_name,
     embedding=embeddings, 
 )
+print("Finished indexing documents into Pinecone successfully!")
